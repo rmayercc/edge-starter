@@ -9,6 +9,9 @@
   <!-- Reminders example. -->
   <key>com.apple.security.personal-information.reminders</key>
   <true/>
+  <!-- Calendar example. -->
+  <key>com.apple.security.personal-information.calendars</key>
+  <true/>
   <!-- Photos example. -->
   <key>com.apple.security.personal-information.photos-library</key>
   <true/>

@@ -97,6 +97,13 @@ fn pin_above_menu_bar(win: &WebviewWindow) {
     }
 }
 
+/// Send an event to the page (`window.__TAURI__.event.listen(name, …)`).
+pub(crate) fn emit(event: &str) {
+    if let Some(app) = APP.get() {
+        let _ = tauri::Emitter::emit(app, event, ());
+    }
+}
+
 /// "Show on Edge" in the menu bar: put the window back on the Edge.
 pub(crate) fn show_on_edge(app: &tauri::AppHandle) {
     if let Some(win) = app.get_webview_window("main") {
@@ -142,12 +149,21 @@ pub fn run() {
             examples::photo_set_favorite,
             examples::weather,
             examples::system_snapshot,
+            examples::launcher_config,
+            examples::launcher_run,
+            examples::calendar_events,
+            examples::calendar_request_access,
+            examples::calendar_join,
         ])
         .setup(|app| {
             let _ = APP.set(app.handle().clone());
 
             // Example: start sampling CPU / memory / network for system_snapshot.
             examples::system::start();
+            // Launcher: reload the card when launcher.json changes.
+            examples::launcher::start();
+            // Calendar + to-dos: refresh when EventKit reports a change.
+            examples::calendar::start();
 
             // Menu bar app: no Dock icon, waits for the Edge. Remove these
             // lines if you'd rather have a regular Dock app.

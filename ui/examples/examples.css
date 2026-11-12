@@ -32,3 +32,6 @@
 .stat b { font-variant-numeric: tabular-nums; }
 .back { position: fixed; right: 16px; bottom: 12px; color: var(--ink-3); font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .photo-col img { transition: none; } }
+.wx-icon { font-size: 44px; }
+.wx-now { font-size: 18px; }
+.wx-now span { display: block; font-size: 15px; color: var(--ink-3); }

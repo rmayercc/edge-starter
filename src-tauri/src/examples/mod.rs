@@ -8,6 +8,8 @@
 //! `lib.rs`'s `generate_handler!`, plus any permission keys it added to
 //! Info.plist / Entitlements.plist.
 
+pub mod calendar;
+pub mod launcher;
 pub mod now_playing;
 pub mod photos;
 pub mod reminders;
@@ -127,4 +129,38 @@ pub async fn weather() -> Result<weather::Weather, String> {
 #[tauri::command]
 pub fn system_snapshot() -> system::Snapshot {
     system::snapshot()
+}
+
+// ── Launcher ───────────────────────────────────────────────────────────────
+
+/// The buttons in launcher.json, with icons.
+#[tauri::command]
+pub async fn launcher_config() -> Result<launcher::View, String> {
+    blocking(launcher::load).await
+}
+
+/// Run a button. The page only says which one; what it runs comes from
+/// launcher.json.
+#[tauri::command]
+pub async fn launcher_run(rev: u64, index: usize) -> Result<(), String> {
+    blocking(move || launcher::run(rev, index)).await?
+}
+
+// ── Calendar ───────────────────────────────────────────────────────────────
+
+/// Today's and tomorrow's events, plus access state.
+#[tauri::command]
+pub async fn calendar_events() -> Result<Value, String> {
+    blocking(|| json!({ "access": calendar::access(), "events": calendar::list() })).await
+}
+
+#[tauri::command]
+pub async fn calendar_request_access() -> Result<reminders::Access, String> {
+    blocking(calendar::request_access).await
+}
+
+/// Open an event's meeting link. `id` is the event's `id` field.
+#[tauri::command]
+pub async fn calendar_join(id: String) -> Result<(), String> {
+    blocking(move || calendar::join(&id)).await?
 }

@@ -9,6 +9,10 @@
   <string>Edge Starter shows and checks off your reminders.</string>
   <key>NSRemindersUsageDescription</key>
   <string>Edge Starter shows and checks off your reminders.</string>
+  <key>NSCalendarsFullAccessUsageDescription</key>
+  <string>Edge Starter shows today's and tomorrow's meetings.</string>
+  <key>NSCalendarsUsageDescription</key>
+  <string>Edge Starter shows today's and tomorrow's meetings.</string>
   <key>NSPhotoLibraryUsageDescription</key>
   <string>Edge Starter shows photos from your library.</string>
 </dict>
