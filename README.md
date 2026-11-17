@@ -77,10 +77,12 @@ Open **ui/examples.html** (there's a link on the demo page) for five working exa
 | Example | What it shows | Setup |
 | --- | --- | --- |
 | Now playing | Spotify or Apple Music: track, artwork, play/pause, next, previous. Spotify songs get a like button. | macOS asks once per player (Automation). For the like button, see Spotify below. |
-| Weather | Now, feels like, high and low, the next hours. From [Open-Meteo](https://open-meteo.com) (free, no key). | Set `LAT` / `LON` in `src-tauri/src/examples/weather.rs`. |
+| Weather | Now, feels like, high and low, the next hours. From [Open-Meteo](https://open-meteo.com) (free, no key). | Put `{ "lat": 41.88, "lon": -87.63, "name": "Chicago" }` in `~/Library/Application Support/edge-starter/weather.json`. |
 | Reminders | Open reminders from every list, check off, add to your default list (EventKit). | Tap "Show my Reminders"; macOS asks once. |
 | Photos | A random Favorite from Apple Photos every 30 seconds with a fade. Tap for the date and a heart to (un)favorite it (PhotoKit). Photos never opens. | Tap "Show my photos"; macOS asks once. |
 | This Mac | CPU, memory and network, sampled every 2 seconds. | None. |
+| Calendar | Today's and tomorrow's meetings from the macOS Calendar app (EventKit), with a Join button for Teams, Zoom, Meet and Webex links. Refreshes when the calendar changes. | Tap "Show my calendar"; macOS asks once. |
+| Launcher | A grid of big buttons with real app and folder icons: open an app, a folder, a URL, a macOS Shortcut or a shell command. | Edit `~/Library/Application Support/edge-starter/launcher.json` (seeded on first run, reloads on save). The format is at the top of `src-tauri/src/examples/launcher.rs`. |
 
 The permission prompts need matching keys in `src-tauri/Info.plist` and `src-tauri/Entitlements.plist` (hardened runtime). Remove the keys for examples you delete.
 

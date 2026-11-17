@@ -1,14 +1,43 @@
 //! Example: weather from Open-Meteo (free, no key, no account). Current
 //! conditions, today's high and low, and the next 12 hours.
 //!
-//! Set your location in LAT / LON below.
+//! Your location lives outside the repo, in
+//! `~/Library/Application Support/edge-starter/weather.json`:
+//!
+//! ```json
+//! { "lat": 41.88, "lon": -87.63, "name": "Chicago" }
+//! ```
+//!
+//! `name` is optional and only shown on the card.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-/// Where to get weather for. Change to your location.
-pub const LAT: f64 = 41.88;
-pub const LON: f64 = -87.63;
+/// Where to get weather for (weather.json).
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct Place {
+    pub lat: f64,
+    pub lon: f64,
+    pub name: Option<String>,
+}
+
+pub fn config_path() -> std::path::PathBuf {
+    dirs::config_dir().unwrap_or_default().join("edge-starter/weather.json")
+}
+
+pub fn parse_place(text: &str) -> Result<Place, String> {
+    let p: Place = serde_json::from_str(text).map_err(|e| format!("weather.json: {e}"))?;
+    if !(-90.0..=90.0).contains(&p.lat) || !(-180.0..=180.0).contains(&p.lon) {
+        return Err("weather.json: lat / lon out of range".into());
+    }
+    Ok(p)
+}
+
+fn place() -> Result<Place, String> {
+    let path = config_path();
+    let text = std::fs::read_to_string(&path).map_err(|_| format!("Set your location in {}", path.display()))?;
+    parse_place(&text)
+}
 
 #[derive(Debug, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -23,6 +52,8 @@ pub struct Hour {
 #[derive(Debug, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Weather {
+    /// The place's name from weather.json, if it has one.
+    pub name: Option<String>,
     pub temp: i64,
     pub feels_like: i64,
     pub high: i64,
@@ -67,6 +98,7 @@ pub fn parse(v: &Value) -> Option<Weather> {
         })
         .collect();
     Some(Weather {
+        name: None,
         temp: r(&c["temperature_2m"])?,
         feels_like: r(&c["apparent_temperature"]).unwrap_or(0),
         high: r(&d["temperature_2m_max"][0]).unwrap_or(0),
@@ -79,15 +111,18 @@ pub fn parse(v: &Value) -> Option<Weather> {
 }
 
 pub fn fetch() -> Result<Weather, String> {
+    let Place { lat, lon, name } = place()?;
     let url = format!(
-        "https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}\
+        "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}\
          &current=temperature_2m,apparent_temperature,weather_code,is_day\
          &hourly=temperature_2m,precipitation_probability,weather_code\
          &daily=temperature_2m_max,temperature_2m_min\
          &temperature_unit=fahrenheit&timezone=auto&forecast_days=2"
     );
     let v: Value = ureq::get(&url).call().map_err(|e| e.to_string())?.body_mut().read_json().map_err(|e| e.to_string())?;
-    parse(&v).ok_or_else(|| "unexpected weather response".into())
+    let mut w = parse(&v).ok_or("unexpected weather response")?;
+    w.name = name.filter(|n| !n.trim().is_empty());
+    Ok(w)
 }
 
 #[cfg(test)]
@@ -103,5 +138,13 @@ mod tests {
         let w = parse(&v).unwrap();
         assert_eq!((w.temp, w.high, w.low, w.kind, w.hours.len()), (47, 52, 39, "cloudy", 2));
         assert_eq!((w.hours[1].kind, w.hours[1].precip_chance), ("rain", 40));
+    }
+
+    #[test]
+    fn parses_place() {
+        let p = parse_place(r#"{"lat":41.88,"lon":-87.63}"#).unwrap();
+        assert_eq!((p.lat, p.lon, p.name), (41.88, -87.63, None));
+        assert!(parse_place(r#"{"lat":141.88,"lon":-87.63}"#).is_err());
+        assert!(parse_place("nope").is_err());
     }
 }

@@ -31,10 +31,10 @@ sysinfo = { version = "0.37", default-features = false, features = ["system", "n
 core-graphics = "0.25"
 core-foundation = "0.10"
 objc2 = "0.6"
-# Examples: Reminders (EventKit) and Photos (PhotoKit).
+# Examples: Reminders + Calendar (EventKit) and Photos (PhotoKit).
 block2 = "0.6"
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSData", "NSDate", "NSDictionary", "NSError", "NSPredicate", "NSSortDescriptor", "NSString", "NSCalendar"] }
-objc2-event-kit = { version = "0.3", default-features = false, features = ["std", "block2", "EKCalendar", "EKCalendarItem", "EKEventStore", "EKObject", "EKReminder", "EKTypes"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSData", "NSDate", "NSDictionary", "NSError", "NSPredicate", "NSSortDescriptor", "NSString", "NSCalendar", "NSURL"] }
+objc2-event-kit = { version = "0.3", default-features = false, features = ["std", "block2", "EKCalendar", "EKCalendarItem", "EKEvent", "EKEventStore", "EKParticipant", "EKObject", "EKReminder", "EKTypes"] }
 objc2-photos = { version = "0.3", default-features = false, features = ["std", "block2", "PHAsset", "PHObject", "PHFetchResult", "PHFetchOptions", "PHImageManager", "PHPhotoLibrary", "PhotosTypes", "objc2-image-io", "PHAssetChangeRequest", "PHChangeRequest", "dispatch2"] }
 objc2-image-io = { version = "0.3", default-features = false, features = ["std"] }
 

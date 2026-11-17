@@ -3,42 +3,31 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Edge Starter</title>
+  <title>Edge Dashboard</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="dashboard.css" />
 </head>
 <body>
-  <!-- A demo of everything touch can do on the Edge. Replace it with your UI. -->
-  <main class="grid">
-    <section class="col intro">
-      <p class="label">Edge Starter</p>
-      <h1>Touch works.<br />Build something.</h1>
-      <p class="muted">Edit <code>ui/</code> to make this yours.</p>
-      <a class="examples-link" href="examples.html">See the examples: music, weather, Reminders, Photos, system stats</a>
-      <p class="status" id="touch-status">Checking touch…</p>
-    </section>
-
-    <section class="col">
-      <p class="label">Tap</p>
-      <div class="buttons">
-        <button id="count-btn" class="big">Tapped <span id="count">0</span></button>
-        <button id="accent-btn" class="big ghost">Change color</button>
-      </div>
-      <p class="label">Type</p>
-      <input id="text" placeholder="Tap here, then type on your keyboard" />
-    </section>
-
-    <section class="col">
-      <p class="label">Drag to scroll</p>
-      <ul class="list" id="list"></ul>
-    </section>
-
-    <section class="col">
-      <p class="label">Last touch</p>
-      <p class="readout" id="last-touch">–</p>
-      <p class="muted">Position in Edge pixels (2560 × 720).</p>
-    </section>
+  <!-- The dashboard, laid out for 2560x720: 520 | 720 | 520 | 800.
+       Each card is one file in examples/ (and, where it needs the Mac, one
+       Rust module in src-tauri/src/examples/). -->
+  <main class="dash">
+    <div class="col stack">
+      <section id="clock"><div class="body"></div></section>
+      <section id="weather"><p class="label">Weather</p><div class="body"></div></section>
+      <p class="touch-warning" id="touch-status" hidden></p>
+    </div>
+    <section class="col" id="calendar"><p class="label">Calendar</p><div class="body"></div></section>
+    <section class="col" id="todos"><p class="label">To-dos</p><div class="body"></div></section>
+    <section class="col" id="launcher"><p class="label">Launcher</p><div class="body"></div></section>
   </main>
   <script src="touch.js"></script>
-  <script src="app.js"></script>
+  <script src="examples/util.js"></script>
+  <script src="examples/clock.js"></script>
+  <script src="examples/weather.js"></script>
+  <script src="examples/launcher.js"></script>
+  <script src="examples/todos.js"></script>
+  <script src="examples/calendar.js"></script>
+  <script src="dashboard.js"></script>
 </body>
 </html>
