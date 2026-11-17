@@ -1,5 +1,5 @@
 //! Example: a launcher, like a virtual Stream Deck. A grid of buttons that
-//! open an app, open a URL, run a macOS Shortcut or run a shell command.
+//! open an app, a folder or a URL, run a macOS Shortcut or run a shell command.
 //!
 //! The buttons live outside the repo, in
 //! `~/Library/Application Support/edge-starter/launcher.json`, and the card
@@ -8,6 +8,7 @@
 //! ```json
 //! { "buttons": [
 //!   { "label": "Safari",  "app": "Safari" },
+//!   { "label": "Projects", "folder": "~/Projects" },
 //!   { "label": "Mail",    "url": "https://outlook.office.com", "iconApp": "Microsoft Outlook" },
 //!   { "label": "Focus",   "shortcut": "Start Focus", "icon": "⚡" },
 //!   { "label": "Lock",    "shell": "pmset displaysleepnow", "icon": "/path/to/lock.png" }
@@ -15,8 +16,9 @@
 //! ```
 //!
 //! Each button has a `label` and exactly one of `app` (a name or a path, as
-//! for `open -a`), `url`, `shortcut` (as for `shortcuts run`) or `shell`
-//! (run with `zsh -lc`). The icon is the app's real icon where there is one;
+//! for `open -a`), `folder` (a path, opened in Finder; `~/` works), `url`,
+//! `shortcut` (as for `shortcuts run`) or `shell` (run with `zsh -lc`). The
+//! icon is the app's or folder's real icon where there is one;
 //! override it with `icon` (an emoji or short text, or a path to an image or
 //! a .app) or `iconApp` (borrow another app's icon).
 //!
@@ -51,6 +53,7 @@ pub struct Button {
     #[serde(default)]
     pub label: String,
     pub app: Option<String>,
+    pub folder: Option<String>,
     pub url: Option<String>,
     pub shortcut: Option<String>,
     pub shell: Option<String>,
@@ -67,6 +70,7 @@ struct Config {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
     App(String),
+    Folder(String),
     Url(String),
     Shortcut(String),
     Shell(String),
@@ -76,13 +80,19 @@ impl Button {
     /// The one thing this button does.
     pub fn action(&self) -> Result<Action, String> {
         let set = |o: &Option<String>| o.as_deref().map(str::trim).filter(|s| !s.is_empty()).map(str::to_string);
-        let mut all = [set(&self.app).map(Action::App), set(&self.url).map(Action::Url), set(&self.shortcut).map(Action::Shortcut), set(&self.shell).map(Action::Shell)]
-            .into_iter()
-            .flatten();
+        let mut all = [
+            set(&self.app).map(Action::App),
+            set(&self.folder).map(Action::Folder),
+            set(&self.url).map(Action::Url),
+            set(&self.shortcut).map(Action::Shortcut),
+            set(&self.shell).map(Action::Shell),
+        ]
+        .into_iter()
+        .flatten();
         match (all.next(), all.next()) {
             (Some(a), None) => Ok(a),
-            (None, _) => Err("needs one of app, url, shortcut or shell".into()),
-            _ => Err("has more than one of app, url, shortcut, shell".into()),
+            (None, _) => Err("needs one of app, folder, url, shortcut or shell".into()),
+            _ => Err("has more than one of app, folder, url, shortcut, shell".into()),
         }
     }
 }
@@ -91,6 +101,7 @@ impl Action {
     pub fn kind(&self) -> &'static str {
         match self {
             Action::App(_) => "app",
+            Action::Folder(_) => "folder",
             Action::Url(_) => "url",
             Action::Shortcut(_) => "shortcut",
             Action::Shell(_) => "shell",
@@ -102,6 +113,13 @@ impl Action {
     pub fn command(&self) -> Result<(&'static str, Vec<String>), String> {
         Ok(match self {
             Action::App(app) => ("/usr/bin/open", vec!["-a".into(), app.clone()]),
+            Action::Folder(dir) => {
+                let path = expand(dir);
+                if !path.is_dir() {
+                    return Err(format!("No folder at {dir}"));
+                }
+                ("/usr/bin/open", vec![path.to_string_lossy().into_owned()])
+            }
             Action::Url(u) => {
                 url::Url::parse(u).map_err(|_| format!("not a URL: {u}"))?;
                 ("/usr/bin/open", vec![u.clone()])
@@ -181,9 +199,15 @@ fn app_path(app: &str) -> Option<String> {
         .map(|p| p.to_string_lossy().into_owned())
 }
 
-/// An app's real icon as a PNG data URL (kept in memory once made).
+/// An app's real icon as a PNG data URL.
 fn app_icon(app: &str) -> Option<String> {
-    let path = app_path(app)?;
+    file_icon(&app_path(app)?)
+}
+
+/// The icon Finder shows for a file, folder or app, as a PNG data URL (kept
+/// in memory once made).
+fn file_icon(path: &str) -> Option<String> {
+    let path = path.to_string();
     let mut cache = ICONS.lock().unwrap();
     let cache = cache.get_or_insert_with(HashMap::new);
     if let Some(hit) = cache.get(&path) {
@@ -221,6 +245,10 @@ fn icon_for(b: &Button, action: Option<&Action>) -> (Option<String>, Option<Stri
     let from_app = match (&b.icon_app, action) {
         (Some(app), _) => app_icon(app),
         (None, Some(Action::App(app))) => app_icon(app),
+        (None, Some(Action::Folder(dir))) => {
+            let path = expand(dir);
+            if path.is_dir() { file_icon(&path.to_string_lossy()) } else { None }
+        }
         (None, Some(Action::Shortcut(_))) => app_icon("Shortcuts"),
         _ => None,
     };
@@ -229,6 +257,7 @@ fn icon_for(b: &Button, action: Option<&Action>) -> (Option<String>, Option<Stri
     }
     let glyph = match action {
         Some(Action::Url(_)) => "↗",
+        Some(Action::Folder(_)) => "📁",
         Some(Action::Shell(_)) => "›_",
         Some(Action::Shortcut(_)) => "⚡",
         _ => "?",
@@ -430,6 +459,18 @@ mod tests {
         assert!(Action::Url("--help".into()).command().is_err());
         assert_eq!(Action::Url("https://example.com/a b".into()).command().unwrap().0, "/usr/bin/open");
         assert_eq!(Action::Shell("echo hi".into()).command().unwrap(), ("/bin/zsh", vec!["-lc".to_string(), "echo hi".to_string()]));
+    }
+
+    #[test]
+    fn folders_open_as_one_argument() {
+        let dir = std::env::temp_dir().join("edge starter test; echo hi");
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.to_string_lossy().into_owned();
+        assert_eq!(Action::Folder(path.clone()).command().unwrap(), ("/usr/bin/open", vec![path.clone()]));
+        assert!(Action::Folder(format!("{path}/missing")).command().is_err());
+        let b = &parse(&format!(r#"{{"buttons":[{{"label":"x","folder":{}}}]}}"#, serde_json::to_string(&path).unwrap())).unwrap()[0];
+        assert_eq!(b.action().unwrap().kind(), "folder");
+        let _ = std::fs::remove_dir(&dir);
     }
 
     #[cfg(target_os = "macos")]

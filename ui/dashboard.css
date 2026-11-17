@@ -1,7 +1,10 @@
 /* Layout for the dashboard (ui/index.html) on the 2560x720 Edge, read from
    arm's length: nothing under 18px, touch targets at least 44px. */
-.dash { display: grid; grid-template-columns: 520fr 720fr 520fr 800fr; height: 100%; }
-.dash .col { padding: 28px 32px; }
+/* minmax(0, …): a plain `fr` column can't shrink below its longest unbroken
+   line, so one long meeting title or reminder would squeeze the others.
+   With a 0 minimum the widths hold and long text is cut off with "…". */
+.dash { display: grid; grid-template-columns: minmax(0, 520fr) minmax(0, 720fr) minmax(0, 520fr) minmax(0, 800fr); height: 100%; }
+.dash .col { min-width: 0; padding: 28px 32px; }
 .body { display: flex; flex-direction: column; gap: 12px; min-height: 0; flex: 1; }
 .sub { font-size: 18px; color: var(--ink-3); }
 .label { font-size: 15px; }
@@ -32,7 +35,7 @@
 .hours span { display: block; color: var(--ink-3); font-size: 18px; }
 
 /* Launcher: 4 across, 3 rows visible, drag to scroll for more. */
-.launch-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 192px; gap: 16px; overflow-y: auto; min-height: 0; flex: 1; scrollbar-width: none; }
+.launch-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 192px; gap: 16px; overflow-y: auto; min-height: 0; flex: 1; scrollbar-width: none; }
 .launch {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-width: 0; padding: 0 10px;
   border: 1px solid var(--line); border-radius: 26px; background: rgb(255 255 255 / 0.05); color: var(--ink);
